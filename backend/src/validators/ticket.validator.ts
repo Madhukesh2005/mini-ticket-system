@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const ticketIdSchema = z.uuid("Invalid ticket ID");
+
 export const createTicketSchema = z.object({
   customerName: z
     .string()

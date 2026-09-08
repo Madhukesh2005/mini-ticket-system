@@ -3,6 +3,7 @@ import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import {
   createTicketSchema,
+  ticketIdSchema,
   ticketQuerySchema,
   updateTicketSchema,
 } from "../validators/ticket.validator.js";
@@ -23,7 +24,28 @@ const formatValidationErrors = (
   return errors;
 };
 
-export const getTickets = async (req: Request, res: Response) => {
+const validateTicketId = (
+  req: Request,
+  res: Response,
+): string | null => {
+  const result = ticketIdSchema.safeParse(req.params.id);
+
+  if (!result.success) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid ticket ID",
+    });
+
+    return null;
+  }
+
+  return result.data;
+};
+
+export const getTickets = async (
+  req: Request,
+  res: Response,
+) => {
   const result = ticketQuerySchema.safeParse(req.query);
 
   if (!result.success) {
@@ -110,9 +132,10 @@ export const getTickets = async (req: Request, res: Response) => {
   };
 
   for (const item of statusCounts) {
-  const ticketStatus = item.status as keyof typeof counts;
-  counts[ticketStatus] = item._count._all;
-}
+    const ticketStatus = item.status as keyof typeof counts;
+    counts[ticketStatus] = item._count._all;
+  }
+
   return res.status(200).json({
     success: true,
     data: tickets,
@@ -126,7 +149,10 @@ export const getTickets = async (req: Request, res: Response) => {
   });
 };
 
-export const createTicket = async (req: Request, res: Response) => {
+export const createTicket = async (
+  req: Request,
+  res: Response,
+) => {
   const result = createTicketSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -147,8 +173,15 @@ export const createTicket = async (req: Request, res: Response) => {
   });
 };
 
-export const getTicketById = async (req: Request, res: Response) => {
-  const id = String(req.params.id);
+export const getTicketById = async (
+  req: Request,
+  res: Response,
+) => {
+  const id = validateTicketId(req, res);
+
+  if (!id) {
+    return;
+  }
 
   const ticket = await prisma.ticket.findUnique({
     where: { id },
@@ -167,8 +200,15 @@ export const getTicketById = async (req: Request, res: Response) => {
   });
 };
 
-export const updateTicket = async (req: Request, res: Response) => {
-  const id = String(req.params.id);
+export const updateTicket = async (
+  req: Request,
+  res: Response,
+) => {
+  const id = validateTicketId(req, res);
+
+  if (!id) {
+    return;
+  }
 
   const result = updateTicketSchema.safeParse(req.body);
 
@@ -202,8 +242,15 @@ export const updateTicket = async (req: Request, res: Response) => {
   });
 };
 
-export const deleteTicket = async (req: Request, res: Response) => {
-  const id = String(req.params.id);
+export const deleteTicket = async (
+  req: Request,
+  res: Response,
+) => {
+  const id = validateTicketId(req, res);
+
+  if (!id) {
+    return;
+  }
 
   const existingTicket = await prisma.ticket.findUnique({
     where: { id },

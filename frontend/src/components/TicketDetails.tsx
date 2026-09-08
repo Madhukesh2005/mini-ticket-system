@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Check,
   Loader2,
+  MessageSquare,
   Trash2,
   X,
 } from "lucide-react";
@@ -11,6 +12,11 @@ import {
   useDeleteTicket,
   useUpdateTicket,
 } from "../hooks/useTicketMutations";
+
+import {
+  useComments,
+  useCreateComment,
+} from "../hooks/useComments";
 
 import type {
   Priority,
@@ -43,13 +49,32 @@ export default function TicketDetails({
   const updateMutation = useUpdateTicket();
   const deleteMutation = useDeleteTicket();
 
-  const [customerName, setCustomerName] = useState(ticket.customerName);
-  const [title, setTitle] = useState(ticket.title);
-  const [description, setDescription] = useState(ticket.description);
-  const [status, setStatus] = useState<Status>(ticket.status);
-  const [priority, setPriority] = useState<Priority>(ticket.priority);
+  const { data: commentsData, isLoading: commentsLoading } =
+    useComments(ticket.id);
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const createCommentMutation =
+    useCreateComment(ticket.id);
+
+  const [customerName, setCustomerName] =
+    useState(ticket.customerName);
+
+  const [title, setTitle] = useState(ticket.title);
+
+  const [description, setDescription] =
+    useState(ticket.description);
+
+  const [status, setStatus] =
+    useState<Status>(ticket.status);
+
+  const [priority, setPriority] =
+    useState<Priority>(ticket.priority);
+
+  const [author, setAuthor] = useState("");
+
+  const [message, setMessage] = useState("");
+
+  const [showDeleteConfirm, setShowDeleteConfirm] =
+    useState(false);
 
   const handleSave = () => {
     updateMutation.mutate(
@@ -64,24 +89,40 @@ export default function TicketDetails({
         },
       },
       {
-        onSuccess: () => {
-          onClose();
-        },
+        onSuccess: onClose,
       },
     );
   };
 
   const handleDelete = () => {
     deleteMutation.mutate(ticket.id, {
-      onSuccess: () => {
-        onClose();
-      },
+      onSuccess: onClose,
     });
   };
 
+  const handleCommentSubmit = () => {
+    if (!author.trim() || !message.trim()) {
+      return;
+    }
+
+    createCommentMutation.mutate(
+      {
+        author: author.trim(),
+        message: message.trim(),
+      },
+      {
+        onSuccess: () => {
+          setMessage("");
+        },
+      },
+    );
+  };
+
+  const comments = commentsData?.data ?? [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <div>
             <p className="text-sm text-gray-500">
@@ -96,7 +137,7 @@ export default function TicketDetails({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
             aria-label="Close details"
           >
             <X size={20} />
@@ -111,7 +152,9 @@ export default function TicketDetails({
 
             <input
               value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
+              onChange={(e) =>
+                setCustomerName(e.target.value)
+              }
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
             />
           </div>
@@ -135,8 +178,10 @@ export default function TicketDetails({
 
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={5}
+              onChange={(e) =>
+                setDescription(e.target.value)
+              }
+              rows={4}
               className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
             />
           </div>
@@ -156,7 +201,10 @@ export default function TicketDetails({
               >
                 {Object.entries(statusLabels).map(
                   ([value, label]) => (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                    >
                       {label}
                     </option>
                   ),
@@ -172,13 +220,18 @@ export default function TicketDetails({
               <select
                 value={priority}
                 onChange={(e) =>
-                  setPriority(e.target.value as Priority)
+                  setPriority(
+                    e.target.value as Priority,
+                  )
                 }
                 className="w-full rounded-lg border border-gray-300 px-3 py-2"
               >
                 {Object.entries(priorityLabels).map(
                   ([value, label]) => (
-                    <option key={value} value={value}>
+                    <option
+                      key={value}
+                      value={value}
+                    >
                       {label}
                     </option>
                   ),
@@ -187,18 +240,122 @@ export default function TicketDetails({
             </div>
           </div>
 
+          <div className="border-t border-gray-200 pt-6">
+            <div className="mb-4 flex items-center gap-2">
+              <MessageSquare
+                size={18}
+                className="text-gray-600"
+              />
+
+              <h3 className="text-lg font-semibold text-gray-900">
+                Comments
+              </h3>
+            </div>
+
+            {commentsLoading && (
+              <p className="text-sm text-gray-500">
+                Loading comments...
+              </p>
+            )}
+
+            {!commentsLoading &&
+              comments.length === 0 && (
+                <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-500">
+                  No comments yet.
+                </div>
+              )}
+
+            <div className="space-y-3">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-lg border border-gray-200 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-gray-900">
+                      {comment.author}
+                    </p>
+
+                    <p className="text-xs text-gray-400">
+                      {new Date(
+                        comment.createdAt,
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-gray-600">
+                    {comment.message}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <input
+                value={author}
+                onChange={(e) =>
+                  setAuthor(e.target.value)
+                }
+                placeholder="Your name"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+              />
+
+              <textarea
+                value={message}
+                onChange={(e) =>
+                  setMessage(e.target.value)
+                }
+                placeholder="Add a comment..."
+                rows={3}
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+              />
+
+              {createCommentMutation.isError && (
+                <p className="text-sm text-red-600">
+                  {createCommentMutation.error instanceof
+                  Error
+                    ? createCommentMutation.error.message
+                    : "Failed to add comment."}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCommentSubmit}
+                disabled={
+                  createCommentMutation.isPending ||
+                  !author.trim() ||
+                  !message.trim()
+                }
+                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {createCommentMutation.isPending
+                  ? "Adding..."
+                  : "Add Comment"}
+              </button>
+            </div>
+          </div>
+
           <div className="grid gap-4 border-t border-gray-200 pt-5 text-sm sm:grid-cols-2">
             <div>
               <p className="text-gray-500">Created</p>
+
               <p className="mt-1 font-medium text-gray-900">
-                {new Date(ticket.createdAt).toLocaleString()}
+                {new Date(
+                  ticket.createdAt,
+                ).toLocaleString()}
               </p>
             </div>
 
             <div>
-              <p className="text-gray-500">Last updated</p>
+              <p className="text-gray-500">
+                Last updated
+              </p>
+
               <p className="mt-1 font-medium text-gray-900">
-                {new Date(ticket.updatedAt).toLocaleString()}
+                {new Date(
+                  ticket.updatedAt,
+                ).toLocaleString()}
               </p>
             </div>
           </div>
@@ -223,7 +380,9 @@ export default function TicketDetails({
             <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-5 sm:flex-row sm:justify-between">
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={() =>
+                  setShowDeleteConfirm(true)
+                }
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
               >
                 <Trash2 size={16} />
@@ -293,7 +452,9 @@ export default function TicketDetails({
                     <button
                       type="button"
                       onClick={handleDelete}
-                      disabled={deleteMutation.isPending}
+                      disabled={
+                        deleteMutation.isPending
+                      }
                       className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {deleteMutation.isPending ? (

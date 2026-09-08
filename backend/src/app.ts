@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
+
 import ticketRoutes from "./routes/ticket.routes.js";
+import commentRoutes from "./routes/comment.routes.js";
+
 import {
   errorHandler,
   notFoundHandler,
@@ -19,6 +22,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/tickets", ticketRoutes);
+app.use("/api", commentRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
