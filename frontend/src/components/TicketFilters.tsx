@@ -1,14 +1,27 @@
 import type { Priority, Status } from "../types/ticket";
 
+export type SortField =
+  | "createdAt"
+  | "updatedAt"
+  | "title"
+  | "customerName"
+  | "priority";
+
+export type SortOrder = "asc" | "desc";
+
 interface TicketFiltersProps {
   search: string;
   status: Status | "";
   priority: Priority | "";
   customer: string;
+  sortBy: SortField;
+  order: SortOrder;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: Status | "") => void;
   onPriorityChange: (value: Priority | "") => void;
   onCustomerChange: (value: string) => void;
+  onSortByChange: (value: SortField) => void;
+  onOrderChange: (value: SortOrder) => void;
   onClear: () => void;
 }
 
@@ -17,10 +30,14 @@ export default function TicketFilters({
   status,
   priority,
   customer,
+  sortBy,
+  order,
   onSearchChange,
   onStatusChange,
   onPriorityChange,
   onCustomerChange,
+  onSortByChange,
+  onOrderChange,
   onClear,
 }: TicketFiltersProps) {
   const hasFilters =
@@ -31,13 +48,13 @@ export default function TicketFilters({
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
         <input
           type="text"
           placeholder="Search title or customer..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
+          className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500 lg:col-span-2"
         />
 
         <select
@@ -74,19 +91,44 @@ export default function TicketFilters({
           onChange={(e) => onCustomerChange(e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
         />
+
+        <select
+          value={sortBy}
+          onChange={(e) =>
+            onSortByChange(e.target.value as SortField)
+          }
+          className="rounded-lg border border-gray-300 px-3 py-2"
+        >
+          <option value="createdAt">Sort: Created</option>
+          <option value="updatedAt">Sort: Updated</option>
+          <option value="title">Sort: Title</option>
+          <option value="customerName">Sort: Customer</option>
+          <option value="priority">Sort: Priority</option>
+        </select>
       </div>
 
-      {hasFilters && (
-        <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <select
+          value={order}
+          onChange={(e) =>
+            onOrderChange(e.target.value as SortOrder)
+          }
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 sm:w-auto"
+        >
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select>
+
+        {hasFilters && (
           <button
             type="button"
             onClick={onClear}
-            className="text-sm font-medium text-gray-600 hover:text-gray-900"
+            className="text-left text-sm font-medium text-gray-600 hover:text-gray-900 sm:text-right"
           >
             Clear filters
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

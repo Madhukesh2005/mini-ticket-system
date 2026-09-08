@@ -8,7 +8,10 @@ import {
 
 import TicketCard from "./components/TicketCard";
 import TicketDetails from "./components/TicketDetails";
-import TicketFilters from "./components/TicketFilters";
+import TicketFilters, {
+  type SortField,
+  type SortOrder,
+} from "./components/TicketFilters";
 import TicketForm from "./components/TicketForm";
 
 import { useTickets } from "./hooks/useTickets";
@@ -24,10 +27,20 @@ function App() {
   const [status, setStatus] = useState<Status | "">("");
   const [priority, setPriority] = useState<Priority | "">("");
   const [customer, setCustomer] = useState("");
+
+  const [sortBy, setSortBy] =
+    useState<SortField>("createdAt");
+
+  const [order, setOrder] =
+    useState<SortOrder>("desc");
+
   const [page, setPage] = useState(1);
+
   const [selectedTicket, setSelectedTicket] =
     useState<Ticket | null>(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const [showCreateForm, setShowCreateForm] =
+    useState(false);
 
   const {
     data,
@@ -42,8 +55,8 @@ function App() {
     customer,
     page,
     limit: 10,
-    sortBy: "createdAt",
-    order: "desc",
+    sortBy,
+    order,
   });
 
   const tickets = data?.data ?? [];
@@ -67,6 +80,16 @@ function App() {
 
   const handleCustomerChange = (value: string) => {
     setCustomer(value);
+    setPage(1);
+  };
+
+  const handleSortByChange = (value: SortField) => {
+    setSortBy(value);
+    setPage(1);
+  };
+
+  const handleOrderChange = (value: SortOrder) => {
+    setOrder(value);
     setPage(1);
   };
 
@@ -157,10 +180,14 @@ function App() {
             status={status}
             priority={priority}
             customer={customer}
+            sortBy={sortBy}
+            order={order}
             onSearchChange={handleSearchChange}
             onStatusChange={handleStatusChange}
             onPriorityChange={handlePriorityChange}
             onCustomerChange={handleCustomerChange}
+            onSortByChange={handleSortByChange}
+            onOrderChange={handleOrderChange}
             onClear={handleClearFilters}
           />
         </div>
@@ -242,7 +269,8 @@ function App() {
                   <button
                     type="button"
                     disabled={
-                      pagination.page <= 1 || isFetching
+                      pagination.page <= 1 ||
+                      isFetching
                     }
                     onClick={() =>
                       setPage((current) => current - 1)
