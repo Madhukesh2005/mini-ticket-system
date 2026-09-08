@@ -79,7 +79,7 @@ export const getTickets = async (req: Request, res: Response) => {
     ];
   }
 
-  const [tickets, total] = await Promise.all([
+  const [tickets, total, statusCounts] = await Promise.all([
     prisma.ticket.findMany({
       where,
       skip: (page - 1) * limit,
@@ -92,7 +92,26 @@ export const getTickets = async (req: Request, res: Response) => {
     prisma.ticket.count({
       where,
     }),
+
+    prisma.ticket.groupBy({
+      by: ["status"],
+      where,
+      _count: {
+        _all: true,
+      },
+    }),
   ]);
+
+  const counts = {
+    OPEN: 0,
+    IN_PROGRESS: 0,
+    RESOLVED: 0,
+    CLOSED: 0,
+  };
+
+  for (const item of statusCounts) {
+    counts[item.status] = item._count._all;
+  }
 
   return res.status(200).json({
     success: true,
@@ -103,6 +122,7 @@ export const getTickets = async (req: Request, res: Response) => {
       total,
       totalPages: Math.ceil(total / limit),
     },
+    stats: counts,
   });
 };
 
