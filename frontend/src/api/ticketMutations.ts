@@ -4,7 +4,8 @@ import type {
   UpdateTicketInput,
 } from "../types/ticket";
 
-const API_URL = "/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "/api";
 
 interface ApiResponse<T> {
   success: boolean;
@@ -21,7 +22,9 @@ const handleResponse = async <T>(
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    throw new Error(
+      data.message || "Request failed",
+    );
   }
 
   return data;
@@ -30,15 +33,20 @@ const handleResponse = async <T>(
 export const createTicket = async (
   ticket: CreateTicketInput,
 ): Promise<Ticket> => {
-  const response = await fetch(`${API_URL}/tickets`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${API_URL}/tickets`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ticket),
     },
-    body: JSON.stringify(ticket),
-  });
+  );
 
-  const result = await handleResponse<ApiResponse<Ticket>>(response);
+  const result = await handleResponse<
+    ApiResponse<Ticket>
+  >(response);
 
   return result.data;
 };
@@ -47,15 +55,20 @@ export const updateTicket = async (
   id: string,
   ticket: UpdateTicketInput,
 ): Promise<Ticket> => {
-  const response = await fetch(`${API_URL}/tickets/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${API_URL}/tickets/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(ticket),
     },
-    body: JSON.stringify(ticket),
-  });
+  );
 
-  const result = await handleResponse<ApiResponse<Ticket>>(response);
+  const result = await handleResponse<
+    ApiResponse<Ticket>
+  >(response);
 
   return result.data;
 };
@@ -63,9 +76,12 @@ export const updateTicket = async (
 export const deleteTicket = async (
   id: string,
 ): Promise<void> => {
-  const response = await fetch(`${API_URL}/tickets/${id}`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `${API_URL}/tickets/${id}`,
+    {
+      method: "DELETE",
+    },
+  );
 
   await handleResponse<void>(response);
 };

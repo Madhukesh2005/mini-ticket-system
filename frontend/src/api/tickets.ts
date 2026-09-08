@@ -3,7 +3,8 @@ import type {
   TicketsResponse,
 } from "../types/ticket";
 
-const API_URL = "/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "/api";
 
 export interface TicketQueryParams {
   status?: string;
@@ -16,7 +17,9 @@ export interface TicketQueryParams {
   order?: "asc" | "desc";
 }
 
-const buildQueryString = (params: TicketQueryParams = {}) => {
+const buildQueryString = (
+  params: TicketQueryParams = {},
+) => {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -36,7 +39,9 @@ const handleResponse = async <T>(
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    throw new Error(
+      data.message || "Request failed",
+    );
   }
 
   return data;
@@ -52,8 +57,12 @@ export const getTickets = async (
   return handleResponse<TicketsResponse>(response);
 };
 
-export const getTicket = async (id: string): Promise<Ticket> => {
-  const response = await fetch(`${API_URL}/tickets/${id}`);
+export const getTicket = async (
+  id: string,
+): Promise<Ticket> => {
+  const response = await fetch(
+    `${API_URL}/tickets/${id}`,
+  );
 
   const result = await handleResponse<{
     success: true;

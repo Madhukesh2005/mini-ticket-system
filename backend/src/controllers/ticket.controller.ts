@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Prisma } from "../generated/prisma/client";
+import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import {
   createTicketSchema,
@@ -110,9 +110,9 @@ export const getTickets = async (req: Request, res: Response) => {
   };
 
   for (const item of statusCounts) {
-    counts[item.status] = item._count._all;
-  }
-
+  const ticketStatus = item.status as keyof typeof counts;
+  counts[ticketStatus] = item._count._all;
+}
   return res.status(200).json({
     success: true,
     data: tickets,

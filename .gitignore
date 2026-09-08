@@ -4,3 +4,9 @@ node_modules/
 dist/
 .vercel/
 coverage/
+
+backend/src/generated/
+backend/.agents/
+backend/.claude/
+backend/.cursor/
+backend/.devin/
