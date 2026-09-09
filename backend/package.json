@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
+"scripts": {
   "dev": "tsx watch src/server.ts",
   "build": "tsc",
   "start": "node dist/server.js",
   "test": "vitest run",
-  "test:watch": "vitest"
+  "test:watch": "vitest",
+  "postinstall": "prisma generate"
 },
   "keywords": [],
   "type": "module",
