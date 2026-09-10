@@ -5,7 +5,8 @@ export type SortField =
   | "updatedAt"
   | "title"
   | "customerName"
-  | "priority";
+  | "priority"
+  | "status";
 
 export type SortOrder = "asc" | "desc";
 
@@ -104,6 +105,7 @@ export default function TicketFilters({
           <option value="title">Sort: Title</option>
           <option value="customerName">Sort: Customer</option>
           <option value="priority">Sort: Priority</option>
+          <option value="status">Sort: Status</option>
         </select>
       </div>
 

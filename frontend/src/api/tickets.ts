@@ -3,6 +3,14 @@ import type {
   TicketsResponse,
 } from "../types/ticket";
 
+export {
+  ApiError,
+  extractErrorMessage,
+  handleResponse,
+} from "./client";
+
+import { handleResponse } from "./client";
+
 const API_URL =
   import.meta.env.VITE_API_URL || "/api";
 
@@ -33,25 +41,13 @@ const buildQueryString = (
   return query ? `?${query}` : "";
 };
 
-const handleResponse = async <T>(
-  response: Response,
-): Promise<T> => {
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Request failed",
-    );
-  }
-
-  return data;
-};
-
 export const getTickets = async (
   params: TicketQueryParams = {},
+  signal?: AbortSignal,
 ): Promise<TicketsResponse> => {
   const response = await fetch(
     `${API_URL}/tickets${buildQueryString(params)}`,
+    { signal },
   );
 
   return handleResponse<TicketsResponse>(response);
@@ -59,9 +55,11 @@ export const getTickets = async (
 
 export const getTicket = async (
   id: string,
+  signal?: AbortSignal,
 ): Promise<Ticket> => {
   const response = await fetch(
     `${API_URL}/tickets/${id}`,
+    { signal },
   );
 
   const result = await handleResponse<{

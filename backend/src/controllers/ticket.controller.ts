@@ -1,28 +1,13 @@
 import { Request, Response } from "express";
 import { Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
+import { formatValidationErrors } from "../lib/validation.js";
 import {
   createTicketSchema,
   ticketIdSchema,
   ticketQuerySchema,
   updateTicketSchema,
 } from "../validators/ticket.validator.js";
-
-const formatValidationErrors = (
-  issues: { path: PropertyKey[]; message: string }[],
-) => {
-  const errors: Record<string, string> = {};
-
-  for (const issue of issues) {
-    const field = issue.path[0];
-
-    if (typeof field === "string" && !errors[field]) {
-      errors[field] = issue.message;
-    }
-  }
-
-  return errors;
-};
 
 const validateTicketId = (
   req: Request,
@@ -101,6 +86,9 @@ export const getTickets = async (
     ];
   }
 
+  const statsWhere: Prisma.TicketWhereInput = { ...where };
+  delete statsWhere.status;
+
   const [tickets, total, statusCounts] = await Promise.all([
     prisma.ticket.findMany({
       where,
@@ -117,7 +105,7 @@ export const getTickets = async (
 
     prisma.ticket.groupBy({
       by: ["status"],
-      where,
+      where: statsWhere,
       _count: {
         _all: true,
       },
@@ -143,7 +131,7 @@ export const getTickets = async (
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     },
     stats: counts,
   });
@@ -210,16 +198,6 @@ export const updateTicket = async (
     return;
   }
 
-  const result = updateTicketSchema.safeParse(req.body);
-
-  if (!result.success) {
-    return res.status(400).json({
-      success: false,
-      message: "Validation failed",
-      errors: formatValidationErrors(result.error.issues),
-    });
-  }
-
   const existingTicket = await prisma.ticket.findUnique({
     where: { id },
   });
@@ -228,6 +206,16 @@ export const updateTicket = async (
     return res.status(404).json({
       success: false,
       message: "Ticket not found",
+    });
+  }
+
+  const result = updateTicketSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: formatValidationErrors(result.error.issues),
     });
   }
 

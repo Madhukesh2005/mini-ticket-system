@@ -176,7 +176,7 @@ npm run dev
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/health` | Service health status |
+| `GET` | `/health` | Service and database health status |
 | `GET` | `/tickets` | List tickets with support for filtering, search, sorting, and pagination |
 | `POST` | `/tickets` | Create a new ticket (validates customer name, title, description, priority) |
 | `GET` | `/tickets/:id` | Fetch single ticket details by UUID |
@@ -293,7 +293,7 @@ mini-ticket-system/
 
 ## Automated Testing & Quality Assurance
 
-Integration tests are executed using **Vitest** and **Supertest** against the Express application layer.
+Integration tests are executed using **Vitest** and **Supertest** against the Express application layer with an in-memory Prisma mock. They do not connect to Supabase or any production database.
 
 Run backend tests:
 ```bash
@@ -307,6 +307,7 @@ npm test
 * **Input Validation:** Verifies invalid ticket request data is rejected with `400 Bad Request`.
 * **Query Mechanics:** Verifies query validation and ticket filtering behavior.
 * **CRUD Lifecycle:** Verifies ticket creation, retrieval, update, filtering, deletion, and post-deletion `404 Not Found` behavior.
+* **Comment Lifecycle:** Verifies comment creation, retrieval, validation, and cascade deletion with tickets.
 
 ---
 
@@ -318,7 +319,7 @@ The application is deployed across two independent Vercel projects linked to the
 * **Platform:** Vercel (Express on Node.js / Vercel Functions)
 * **Root Directory:** `backend`
 * **Node.js Runtime:** 24.x
-* **Environment Variables:** `DATABASE_URL`, `DIRECT_URL`
+* **Environment Variables:** `DATABASE_URL`, `DIRECT_URL`, `FRONTEND_URL`
 * **Live Base URL:** https://mini-ticket-system-backend.vercel.app
 
 ### Frontend Deployment

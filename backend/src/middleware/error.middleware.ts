@@ -16,6 +16,18 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
+  if (
+    err instanceof SyntaxError &&
+    "status" in err &&
+    err.status === 400 &&
+    "body" in err
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Malformed JSON payload in request body",
+    });
+  }
+
   console.error(err);
 
   return res.status(500).json({

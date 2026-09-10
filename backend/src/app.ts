@@ -9,16 +9,45 @@ import {
   notFoundHandler,
 } from "./middleware/error.middleware.js";
 
+import { prisma } from "./lib/prisma.js";
+
 const app = express();
 
-app.use(cors());
+app.disable("x-powered-by");
+
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
+const frontendUrl = process.env.FRONTEND_URL;
+
+app.use(
+  cors({
+    origin: frontendUrl
+      ? [frontendUrl, /^http:\/\/localhost:\d+$/]
+      : false,
+  }),
+);
 app.use(express.json());
 
-app.get("/api/health", (_req, res) => {
-  return res.status(200).json({
-    success: true,
-    message: "API is running",
-  });
+app.get("/api/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return res.status(200).json({
+      success: true,
+      message: "API is running",
+      database: "connected",
+    });
+  } catch {
+    return res.status(503).json({
+      success: false,
+      message: "Database connection failed",
+      database: "disconnected",
+    });
+  }
 });
 
 app.use("/api/tickets", ticketRoutes);

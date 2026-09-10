@@ -4,6 +4,8 @@ import type {
   UpdateTicketInput,
 } from "../types/ticket";
 
+import { handleResponse } from "./client";
+
 const API_URL =
   import.meta.env.VITE_API_URL || "/api";
 
@@ -11,24 +13,6 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
 }
-
-const handleResponse = async <T>(
-  response: Response,
-): Promise<T> => {
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Request failed",
-    );
-  }
-
-  return data;
-};
 
 export const createTicket = async (
   ticket: CreateTicketInput,

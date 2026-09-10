@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -9,17 +10,20 @@ const ticketFormSchema = z.object({
   customerName: z
     .string()
     .trim()
-    .min(2, "Customer name must be at least 2 characters"),
+    .min(2, "Customer name must be at least 2 characters")
+    .max(100, "Customer name cannot exceed 100 characters"),
 
   title: z
     .string()
     .trim()
-    .min(3, "Title must be at least 3 characters"),
+    .min(3, "Title must be at least 3 characters")
+    .max(200, "Title cannot exceed 200 characters"),
 
   description: z
     .string()
     .trim()
-    .min(5, "Description must be at least 5 characters"),
+    .min(5, "Description must be at least 5 characters")
+    .max(5000, "Description cannot exceed 5000 characters"),
 
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
 });
@@ -36,6 +40,16 @@ export default function TicketForm({
   onCancel,
 }: TicketFormProps) {
   const createTicketMutation = useCreateTicket();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
 
   const {
     register,
@@ -62,10 +76,15 @@ export default function TicketForm({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-xl">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-ticket-title"
+      className="rounded-2xl border border-gray-200 bg-white shadow-xl"
+    >
       <div className="flex items-center justify-between border-b border-gray-200 p-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 id="create-ticket-title" className="text-xl font-semibold text-gray-900">
             Create Ticket
           </h2>
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -17,6 +17,8 @@ import {
   useComments,
   useCreateComment,
 } from "../hooks/useComments";
+
+import { useTicket } from "../hooks/useTickets";
 
 import type {
   Priority,
@@ -46,6 +48,7 @@ export default function TicketDetails({
   ticket,
   onClose,
 }: TicketDetailsProps) {
+  const { data: currentTicket = ticket } = useTicket(ticket.id, ticket);
   const updateMutation = useUpdateTicket();
   const deleteMutation = useDeleteTicket();
 
@@ -76,14 +79,57 @@ export default function TicketDetails({
   const [showDeleteConfirm, setShowDeleteConfirm] =
     useState(false);
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [commentError, setCommentError] = useState<string>("");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   const handleSave = () => {
+    const errors: Record<string, string> = {};
+    const trimmedCustomer = customerName.trim();
+    const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedCustomer || trimmedCustomer.length < 2) {
+      errors.customerName = "Customer name must be at least 2 characters";
+    } else if (trimmedCustomer.length > 100) {
+      errors.customerName = "Customer name cannot exceed 100 characters";
+    }
+
+    if (!trimmedTitle || trimmedTitle.length < 3) {
+      errors.title = "Title must be at least 3 characters";
+    } else if (trimmedTitle.length > 200) {
+      errors.title = "Title cannot exceed 200 characters";
+    }
+
+    if (!trimmedDescription || trimmedDescription.length < 5) {
+      errors.description = "Description must be at least 5 characters";
+    } else if (trimmedDescription.length > 5000) {
+      errors.description = "Description cannot exceed 5000 characters";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
+
     updateMutation.mutate(
       {
         id: ticket.id,
         ticket: {
-          customerName,
-          title,
-          description,
+          customerName: trimmedCustomer,
+          title: trimmedTitle,
+          description: trimmedDescription,
           status,
           priority,
         },
@@ -101,18 +147,37 @@ export default function TicketDetails({
   };
 
   const handleCommentSubmit = () => {
-    if (!author.trim() || !message.trim()) {
+    const trimmedAuthor = author.trim();
+    const trimmedMessage = message.trim();
+
+    if (trimmedAuthor.length < 2) {
+      setCommentError("Author must be at least 2 characters");
+      return;
+    }
+    if (trimmedAuthor.length > 100) {
+      setCommentError("Author cannot exceed 100 characters");
+      return;
+    }
+    if (!trimmedMessage) {
+      setCommentError("Comment cannot be empty");
+      return;
+    }
+    if (trimmedMessage.length > 1000) {
+      setCommentError("Comment cannot exceed 1000 characters");
       return;
     }
 
+    setCommentError("");
+
     createCommentMutation.mutate(
       {
-        author: author.trim(),
-        message: message.trim(),
+        author: trimmedAuthor,
+        message: trimmedMessage,
       },
       {
         onSuccess: () => {
           setMessage("");
+          setCommentError("");
         },
       },
     );
@@ -121,16 +186,25 @@ export default function TicketDetails({
   const comments = commentsData?.data ?? [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-details-title"
+        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-gray-200 p-6">
           <div>
             <p className="text-sm text-gray-500">
               Ticket Details
             </p>
 
-            <h2 className="mt-1 text-2xl font-bold text-gray-900">
-              {ticket.title}
+            <h2 id="ticket-details-title" className="mt-1 text-2xl font-bold text-gray-900">
+              {currentTicket.title}
             </h2>
           </div>
 
@@ -152,11 +226,20 @@ export default function TicketDetails({
 
             <input
               value={customerName}
-              onChange={(e) =>
-                setCustomerName(e.target.value)
-              }
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                if (formErrors.customerName) {
+                  setFormErrors((prev) => ({ ...prev, customerName: "" }));
+                }
+              }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
             />
+
+            {formErrors.customerName && (
+              <p className="mt-1 text-sm text-red-600">
+                {formErrors.customerName}
+              </p>
+            )}
           </div>
 
           <div>
@@ -166,9 +249,20 @@ export default function TicketDetails({
 
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (formErrors.title) {
+                  setFormErrors((prev) => ({ ...prev, title: "" }));
+                }
+              }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
             />
+
+            {formErrors.title && (
+              <p className="mt-1 text-sm text-red-600">
+                {formErrors.title}
+              </p>
+            )}
           </div>
 
           <div>
@@ -178,12 +272,21 @@ export default function TicketDetails({
 
             <textarea
               value={description}
-              onChange={(e) =>
-                setDescription(e.target.value)
-              }
+              onChange={(e) => {
+                setDescription(e.target.value);
+                if (formErrors.description) {
+                  setFormErrors((prev) => ({ ...prev, description: "" }));
+                }
+              }}
               rows={4}
               className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
             />
+
+            {formErrors.description && (
+              <p className="mt-1 text-sm text-red-600">
+                {formErrors.description}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -309,6 +412,10 @@ export default function TicketDetails({
                 rows={3}
                 className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-gray-500"
               />
+
+              {commentError && (
+                <p className="text-sm text-red-600">{commentError}</p>
+              )}
 
               {createCommentMutation.isError && (
                 <p className="text-sm text-red-600">

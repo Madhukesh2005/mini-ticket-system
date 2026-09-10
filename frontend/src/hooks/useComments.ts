@@ -12,7 +12,7 @@ import {
 export const useComments = (ticketId: string) => {
   return useQuery({
     queryKey: ["comments", ticketId],
-    queryFn: () => getComments(ticketId),
+    queryFn: ({ signal }) => getComments(ticketId, signal),
     enabled: Boolean(ticketId),
   });
 };

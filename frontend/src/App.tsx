@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,25 +22,108 @@ import type {
   Ticket,
 } from "./types/ticket";
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+const getInitialParams = () => {
+  if (typeof window === "undefined") {
+    return {
+      search: "",
+      status: "" as Status | "",
+      priority: "" as Priority | "",
+      customer: "",
+      sortBy: "createdAt" as SortField,
+      order: "desc" as SortOrder,
+      page: 1,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const rawStatus = params.get("status") || "";
+  const rawPriority = params.get("priority") || "";
+  const rawSortBy = params.get("sortBy") || "createdAt";
+  const rawOrder = params.get("order") || "desc";
+  const rawPage = parseInt(params.get("page") || "1", 10);
+
+  return {
+    search: params.get("search") || "",
+    status: (["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].includes(rawStatus)
+      ? rawStatus
+      : "") as Status | "",
+    priority: (["LOW", "MEDIUM", "HIGH"].includes(rawPriority)
+      ? rawPriority
+      : "") as Priority | "",
+    customer: params.get("customer") || "",
+    sortBy: ([
+      "createdAt",
+      "updatedAt",
+      "title",
+      "customerName",
+      "priority",
+      "status",
+    ].includes(rawSortBy)
+      ? rawSortBy
+      : "createdAt") as SortField,
+    order: (rawOrder === "asc" ? "asc" : "desc") as SortOrder,
+    page: !isNaN(rawPage) && rawPage > 0 ? rawPage : 1,
+  };
+};
+
 function App() {
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<Status | "">("");
-  const [priority, setPriority] = useState<Priority | "">("");
-  const [customer, setCustomer] = useState("");
+  const initial = getInitialParams();
+
+  const [search, setSearch] = useState(initial.search);
+  const [status, setStatus] = useState<Status | "">(initial.status);
+  const [priority, setPriority] = useState<Priority | "">(initial.priority);
+  const [customer, setCustomer] = useState(initial.customer);
 
   const [sortBy, setSortBy] =
-    useState<SortField>("createdAt");
+    useState<SortField>(initial.sortBy);
 
   const [order, setOrder] =
-    useState<SortOrder>("desc");
+    useState<SortOrder>(initial.order);
 
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initial.page);
 
   const [selectedTicket, setSelectedTicket] =
     useState<Ticket | null>(null);
 
   const [showCreateForm, setShowCreateForm] =
     useState(false);
+
+  const debouncedSearch = useDebounce(search, 350);
+  const debouncedCustomer = useDebounce(customer, 350);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (status) params.set("status", status);
+    if (priority) params.set("priority", priority);
+    if (customer) params.set("customer", customer);
+    if (sortBy !== "createdAt") params.set("sortBy", sortBy);
+    if (order !== "desc") params.set("order", order);
+    if (page > 1) params.set("page", String(page));
+
+    const qs = params.toString();
+    const newUrl = qs
+      ? `${window.location.pathname}?${qs}`
+      : window.location.pathname;
+
+    window.history.replaceState(null, "", newUrl);
+  }, [search, status, priority, customer, sortBy, order, page]);
 
   const {
     data,
@@ -49,10 +132,10 @@ function App() {
     error,
     isFetching,
   } = useTickets({
-    search,
+    search: debouncedSearch,
     status,
     priority,
-    customer,
+    customer: debouncedCustomer,
     page,
     limit: 10,
     sortBy,
@@ -62,6 +145,16 @@ function App() {
   const tickets = data?.data ?? [];
   const pagination = data?.pagination;
   const stats = data?.stats;
+
+  // When a deletion empties the current page, step back to the previous page.
+  // The setState call is intentional here — this is a reactive correction, not
+  // a synchronization side-effect. The eslint rule is suppressed for this line.
+  useEffect(() => {
+    if (!isLoading && !isError && tickets.length === 0 && page > 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isLoading, isError, tickets.length, page]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -231,14 +324,26 @@ function App() {
               Try changing your filters or create a new ticket.
             </p>
 
-            <button
-              type="button"
-              onClick={() => setShowCreateForm(true)}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
-            >
-              <Plus size={16} />
-              Create Ticket
-            </button>
+            <div className="flex flex-wrap justify-center gap-3 mt-5">
+              {page > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setPage(1)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Return to page 1
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
+              >
+                <Plus size={16} />
+                Create Ticket
+              </button>
+            </div>
           </div>
         )}
 
@@ -304,14 +409,21 @@ function App() {
 
         {selectedTicket && (
           <TicketDetails
+            key={selectedTicket.id}
             ticket={selectedTicket}
             onClose={() => setSelectedTicket(null)}
           />
         )}
 
         {showCreateForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            onClick={() => setShowCreateForm(false)}
+          >
+            <div
+              className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <TicketForm
                 onSuccess={() => setShowCreateForm(false)}
                 onCancel={() => setShowCreateForm(false)}

@@ -6,7 +6,8 @@ export const createCommentSchema = z.object({
   author: z
     .string()
     .trim()
-    .min(2, "Author must be at least 2 characters"),
+    .min(2, "Author must be at least 2 characters")
+    .max(100, "Author cannot exceed 100 characters"),
 
   message: z
     .string()

@@ -6,17 +6,20 @@ export const createTicketSchema = z.object({
   customerName: z
     .string()
     .trim()
-    .min(2, "Customer name must be at least 2 characters"),
+    .min(2, "Customer name must be at least 2 characters")
+    .max(100, "Customer name cannot exceed 100 characters"),
 
   title: z
     .string()
     .trim()
-    .min(3, "Title must be at least 3 characters"),
+    .min(3, "Title must be at least 3 characters")
+    .max(200, "Title cannot exceed 200 characters"),
 
   description: z
     .string()
     .trim()
-    .min(5, "Description must be at least 5 characters"),
+    .min(5, "Description must be at least 5 characters")
+    .max(5000, "Description cannot exceed 5000 characters"),
 
   priority: z
     .enum(["LOW", "MEDIUM", "HIGH"])
@@ -33,18 +36,21 @@ export const updateTicketSchema = z
       .string()
       .trim()
       .min(2, "Customer name must be at least 2 characters")
+      .max(100, "Customer name cannot exceed 100 characters")
       .optional(),
 
     title: z
       .string()
       .trim()
       .min(3, "Title must be at least 3 characters")
+      .max(200, "Title cannot exceed 200 characters")
       .optional(),
 
     description: z
       .string()
       .trim()
       .min(5, "Description must be at least 5 characters")
+      .max(5000, "Description cannot exceed 5000 characters")
       .optional(),
 
     priority: z
@@ -71,14 +77,14 @@ export const ticketQuerySchema = z.object({
   customer: z
     .string()
     .trim()
-    .min(1, "Customer cannot be empty")
-    .optional(),
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val : undefined)),
 
   search: z
     .string()
     .trim()
-    .min(1, "Search cannot be empty")
-    .optional(),
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val : undefined)),
 
   page: z.coerce
     .number()

@@ -16,28 +16,18 @@ interface CommentResponse {
   data: Comment;
 }
 
+import { handleResponse } from "./client";
+
 const API_URL =
   import.meta.env.VITE_API_URL || "/api";
 
-const handleResponse = async <T>(
-  response: Response,
-): Promise<T> => {
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.message || "Request failed",
-    );
-  }
-
-  return data;
-};
-
 export const getComments = async (
   ticketId: string,
+  signal?: AbortSignal,
 ): Promise<CommentsResponse> => {
   const response = await fetch(
     `${API_URL}/tickets/${ticketId}/comments`,
+    { signal },
   );
 
   return handleResponse<CommentsResponse>(response);
