@@ -23,15 +23,23 @@ app.use((_req, res, next) => {
 });
 
 const frontendUrl = process.env.FRONTEND_URL;
+const isProduction = process.env.NODE_ENV === "production";
+
+if (isProduction && !frontendUrl) {
+  throw new Error("FRONTEND_URL must be configured in production");
+}
+
+const allowedOrigins = [
+  frontendUrl,
+  ...(isProduction ? [] : ["http://localhost:5173"]),
+].filter((origin): origin is string => Boolean(origin));
 
 app.use(
   cors({
-    origin: frontendUrl
-      ? [frontendUrl, /^http:\/\/localhost:\d+$/]
-      : false,
+    origin: allowedOrigins.length > 0 ? allowedOrigins : false,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 app.get("/api/health", async (_req, res) => {
   try {
