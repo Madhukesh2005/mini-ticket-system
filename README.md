@@ -205,12 +205,6 @@ npm run dev
     "status": "OPEN",
     "createdAt": "2026-09-08T12:00:00.000Z",
     "updatedAt": "2026-09-08T12:00:00.000Z"
-  },
-  "stats": {
-    "OPEN": 0,
-    "IN_PROGRESS": 0,
-    "RESOLVED": 0,
-    "CLOSED": 0
   }
 }
 ```
@@ -225,6 +219,12 @@ npm run dev
     "limit": 10,
     "total": 42,
     "totalPages": 5
+  },
+  "stats": {
+    "OPEN": 0,
+    "IN_PROGRESS": 0,
+    "RESOLVED": 0,
+    "CLOSED": 0
   }
 }
 ```
