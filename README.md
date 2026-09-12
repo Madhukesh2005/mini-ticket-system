@@ -77,7 +77,7 @@ The application uses a serverless architecture where the Express API runs as a N
 ## Quick Start (Local Setup)
 
 ### Prerequisites
-* **Node.js:** v18+ recommended for local development
+* **Node.js:** 20.19+ recommended
 * **npm:** v9+
 * **PostgreSQL:** Running locally or a remote Supabase instance
 * **Git**
@@ -119,7 +119,7 @@ npm install
 npm run dev
 ```
 * **Local Frontend:** `http://localhost:5173`
-*(Vite proxies `/api` calls to `http://localhost:5000` automatically during local development).*
+*(If `VITE_API_URL` is unset, the frontend uses the Vite `/api` proxy to `http://localhost:5000`. If `VITE_API_URL` is set, the frontend calls that API URL directly.)*
 
 ---
 
@@ -127,7 +127,7 @@ npm run dev
 
 * **Full CRUD Operations:** Create tickets, view ticket details, update status/priority, and delete tickets.
 * **Server-Side Filtering & Search:** Filter by `status`, `priority`, and `customer`, with case-insensitive search across ticket titles and customer names.
-* **Database Pagination & Sorting:** Database-level pagination using `page` and `limit`, with customizable sorting by `createdAt`, `updatedAt`, `priority`, `status`, `title`, and customer.
+* **Database Pagination & Sorting:** Database-level pagination using `page` and `limit`, with customizable sorting by `createdAt`, `updatedAt`, `priority`, `status`, `title`, and `customerName`.
 * **Nested Comments System:** 1-to-many relational comment model per ticket with author tracking and automatic cascade deletion.
 * **Optimistic UI Updates:** Deletion actions trigger immediate UI removal with automatic state rollbacks if the network request fails.
 * **Resilient UI States:** Dedicated loading skeletons, empty data screens, and an overarching React Error Boundary to catch render failures.
@@ -205,6 +205,12 @@ npm run dev
     "status": "OPEN",
     "createdAt": "2026-09-08T12:00:00.000Z",
     "updatedAt": "2026-09-08T12:00:00.000Z"
+  },
+  "stats": {
+    "OPEN": 0,
+    "IN_PROGRESS": 0,
+    "RESOLVED": 0,
+    "CLOSED": 0
   }
 }
 ```
